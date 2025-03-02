@@ -1,0 +1,15 @@
+.
+├── .gitignore
+├── README.md
+├── requirements.txt
+├── app.py
+├── src/
+│   ├── __init__.py
+│   ├── data_processing.py
+│   ├── analysis.py
+│   └── visualization.py
+├── tests/
+│   ├── __init__.py
+│   └── test_analysis.py
+└── data/
+    └── .gitkeep 
