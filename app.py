@@ -49,6 +49,13 @@ import os
 old_http_proxy = os.environ.pop('HTTP_PROXY', None)
 old_https_proxy = os.environ.pop('HTTPS_PROXY', None)
 
+import httpx
+http_client = httpx.Client(
+    base_url="https://api.openai.com",
+    follow_redirects=True,
+    timeout=60.0,
+)
+
 # タイトルとイントロダクション
 st.title("広告パフォーマンス分析ダッシュボード")
 st.markdown("""
