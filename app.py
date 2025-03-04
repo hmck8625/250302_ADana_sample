@@ -697,8 +697,10 @@ def run_llm_analysis(summary_data, cv_contribution_df, cpa_factors_df, previous_
             return "LLM分析を実行するにはOpenAIのAPIキーが必要です。サイドバーでAPIキーを入力してください。"
         
         # OpenAI APIクライアントの設定
-        client = OpenAI(api_key=api_key)
-        
+        client = OpenAI(
+          api_key=api_key,
+          http_client=http_client
+        )
         # データを整形してプロンプトを作成
         prompt = f"""あなたは広告データ分析の専門家です。以下の広告パフォーマンスデータ（{previous_month}と{current_month}の比較）を分析し、洞察と推奨事項を提供してください。
 
