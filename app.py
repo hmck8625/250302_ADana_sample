@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-import openai
+from openai import OpenAI
 import os
 import tempfile
 import traceback
@@ -686,7 +686,7 @@ def run_llm_analysis(summary_data, cv_contribution_df, cpa_factors_df, previous_
             return "LLM分析を実行するにはOpenAIのAPIキーが必要です。サイドバーでAPIキーを入力してください。"
         
         # OpenAI APIクライアントの設定
-        client = openai.OpenAI(api_key=api_key)
+        client = OpenAI(api_key=api_key)
         
         # データを整形してプロンプトを作成
         prompt = f"""あなたは広告データ分析の専門家です。以下の広告パフォーマンスデータ（{previous_month}と{current_month}の比較）を分析し、洞察と推奨事項を提供してください。
@@ -760,7 +760,7 @@ def run_campaign_analysis(campaign_df, selected_media, previous_month, current_m
             return "LLM分析を実行するにはOpenAIのAPIキーが必要です。サイドバーでAPIキーを入力してください。"
         
         # OpenAI APIクライアントの設定
-        client = openai.OpenAI(api_key=api_key)
+        client = OpenAI(api_key=api_key)
         
         # キャンペーンデータを整形
         prompt = f"""あなたは広告データ分析の専門家です。以下の「{selected_media}」媒体のキャンペーンレベルのデータ（{previous_month}と{current_month}の比較）を分析し、洞察と推奨事項を提供してください。
@@ -812,7 +812,7 @@ def run_adgroup_analysis(adgroup_df, selected_media, selected_campaign, previous
             return "LLM分析を実行するにはOpenAIのAPIキーが必要です。サイドバーでAPIキーを入力してください。"
         
         # OpenAI APIクライアントの設定
-        client = openai.OpenAI(api_key=api_key)
+        client = OpenAI(api_key=api_key)
         
         # 広告グループデータを整形
         prompt = f"""あなたは広告データ分析の専門家です。以下の「{selected_media}」媒体の「{selected_campaign}」キャンペーン内の広告グループレベルのデータ（{previous_month}と{current_month}の比較）を分析し、洞察と推奨事項を提供してください。
@@ -1380,7 +1380,7 @@ if st.session_state.processed_data is not None and st.session_state.analysis_res
                     with st.spinner("総合分析を生成中..."):
                         try:
                             # OpenAI APIクライアントの設定
-                            client = openai.OpenAI(api_key=api_key)
+                            client = OpenAI(api_key=api_key)
                             
                             # 総合分析のプロンプト作成
                             prompt = f"""あなたは広告パフォーマンス分析の専門家です。以下のデータ分析結果を総合的に評価し、全体的な最適化提案をしてください。
