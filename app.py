@@ -45,6 +45,10 @@ if 'auto_analysis_results' not in st.session_state:
 if 'important_media' not in st.session_state:
     st.session_state.important_media = None
 
+import os
+old_http_proxy = os.environ.pop('HTTP_PROXY', None)
+old_https_proxy = os.environ.pop('HTTPS_PROXY', None)
+
 # タイトルとイントロダクション
 st.title("広告パフォーマンス分析ダッシュボード")
 st.markdown("""
