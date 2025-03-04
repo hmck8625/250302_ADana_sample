@@ -429,7 +429,10 @@ def calculate_summary_stats(df, previous_month, current_month):
                    'pct_change': (curr_row['cpc'] - prev_row['cpc']) / prev_row['cpc'] * 100},
             'cpa': {'prev': prev_row['cpa'], 'curr': curr_row['cpa'], 
                    'diff': curr_row['cpa'] - prev_row['cpa'], 
-                   'pct_change': (curr_row['cpa'] - prev_row['cpa']) / prev_row['cpa'] * 100}
+                   'pct_change': (curr_row['cpa'] - prev_row['cpa']) / prev_row['cpa'] * 100},
+            'cpm': {'prev': prev_row['cpm'], 'curr': curr_row['cpm'], 
+                   'diff': curr_row['cpm'] - prev_row['cpm'], 
+                   'pct_change': (curr_row['cpm'] - prev_row['cpm']) / prev_row['cpm'] * 100}
         }
         
         return summary_data
@@ -459,6 +462,7 @@ def get_campaign_level_analysis(df, selected_media, previous_month, current_mont
         month_campaign_data['cvr'] = month_campaign_data['cv'] / month_campaign_data['click'] * 100
         month_campaign_data['cpc'] = month_campaign_data['cost'] / month_campaign_data['click']
         month_campaign_data['cpa'] = month_campaign_data['cost'] / month_campaign_data['cv']
+        month_campaign_data['cpm'] = month_campaign_data['cost'] / month_campaign_data['impression'] * 1000
         
         # 前月と当月のデータを抽出
         prev_data = month_campaign_data[month_campaign_data['yearMonth'] == previous_month]
@@ -479,46 +483,84 @@ def get_campaign_level_analysis(df, selected_media, previous_month, current_mont
             prev_row = prev_data[prev_data['campaign'] == campaign]
             curr_row = curr_data[curr_data['campaign'] == campaign]
             
-            # 前月または当月のデータがない場合にデフォルト値を設定
-            cv_prev = prev_row['cv'].sum() if not prev_row.empty else 0
-            cv_curr = curr_row['cv'].sum() if not curr_row.empty else 0
-            cv_change = cv_curr - cv_prev
+            # インプレッション
+            imp_prev = prev_row['impression'].sum() if not prev_row.empty else 0
+            imp_curr = curr_row['impression'].sum() if not curr_row.empty else 0
+            imp_change = ((imp_curr - imp_prev) / imp_prev * 100) if imp_prev > 0 else 0
             
-            # 寄与率の計算
-            contribution_rate = (cv_change / total_cv_change * 100) if total_cv_change != 0 else 0
+            # CPM
+            cpm_prev = prev_row['cpm'].mean() if not prev_row.empty else 0
+            cpm_curr = curr_row['cpm'].mean() if not curr_row.empty else 0
+            cpm_change = ((cpm_curr - cpm_prev) / cpm_prev * 100) if cpm_prev > 0 else 0
             
-            # CPA計算（0除算対策）
-            cpa_prev = prev_row['cost'].sum() / cv_prev if not prev_row.empty and cv_prev > 0 else 0
-            cpa_curr = curr_row['cost'].sum() / cv_curr if not curr_row.empty and cv_curr > 0 else 0
-            cpa_change = ((cpa_curr - cpa_prev) / cpa_prev * 100) if cpa_prev > 0 and cpa_curr > 0 else 0
+            # クリック
+            click_prev = prev_row['click'].sum() if not prev_row.empty else 0
+            click_curr = curr_row['click'].sum() if not curr_row.empty else 0
+            click_change = ((click_curr - click_prev) / click_prev * 100) if click_prev > 0 else 0
+            
+            # CTR
+            ctr_prev = prev_row['ctr'].mean() if not prev_row.empty else 0
+            ctr_curr = curr_row['ctr'].mean() if not curr_row.empty else 0
+            ctr_change = ((ctr_curr - ctr_prev) / ctr_prev * 100) if ctr_prev > 0 else 0
+            
+            # CPC
+            cpc_prev = prev_row['cpc'].mean() if not prev_row.empty else 0
+            cpc_curr = curr_row['cpc'].mean() if not curr_row.empty else 0
+            cpc_change = ((cpc_curr - cpc_prev) / cpc_prev * 100) if cpc_prev > 0 else 0
             
             # コスト
             cost_prev = prev_row['cost'].sum() if not prev_row.empty else 0
             cost_curr = curr_row['cost'].sum() if not curr_row.empty else 0
             cost_change = ((cost_curr - cost_prev) / cost_prev * 100) if cost_prev > 0 else 0
             
-            # CVR計算
-            click_prev = prev_row['click'].sum() if not prev_row.empty else 0
-            click_curr = curr_row['click'].sum() if not curr_row.empty else 0
-            cvr_prev = (cv_prev / click_prev * 100) if click_prev > 0 else 0
-            cvr_curr = (cv_curr / click_curr * 100) if click_curr > 0 else 0
+            # CV
+            cv_prev = prev_row['cv'].sum() if not prev_row.empty else 0
+            cv_curr = curr_row['cv'].sum() if not curr_row.empty else 0
+            cv_change = cv_curr - cv_prev
+            
+            # CVR
+            cvr_prev = prev_row['cvr'].mean() if not prev_row.empty else 0
+            cvr_curr = curr_row['cvr'].mean() if not curr_row.empty else 0
             cvr_change = ((cvr_curr - cvr_prev) / cvr_prev * 100) if cvr_prev > 0 else 0
+            
+            # CPA
+            cpa_prev = prev_row['cpa'].mean() if not prev_row.empty and cv_prev > 0 else 0
+            cpa_curr = curr_row['cpa'].mean() if not curr_row.empty and cv_curr > 0 else 0
+            cpa_change = ((cpa_curr - cpa_prev) / cpa_prev * 100) if cpa_prev > 0 and cpa_curr > 0 else 0
+            
+            # 寄与率の計算
+            contribution_rate = (cv_change / total_cv_change * 100) if total_cv_change != 0 else 0
             
             campaign_data.append({
                 'campaign': campaign,
+                'imp_prev': imp_prev,
+                'imp_curr': imp_curr,
+                'imp_change': imp_change,
+                'cpm_prev': cpm_prev,
+                'cpm_curr': cpm_curr,
+                'cpm_change': cpm_change,
+                'click_prev': click_prev,
+                'click_curr': click_curr,
+                'click_change': click_change,
+                'ctr_prev': ctr_prev,
+                'ctr_curr': ctr_curr,
+                'ctr_change': ctr_change,
+                'cpc_prev': cpc_prev,
+                'cpc_curr': cpc_curr,
+                'cpc_change': cpc_change,
+                'cost_prev': cost_prev,
+                'cost_curr': cost_curr,
+                'cost_change': cost_change,
                 'cv_prev': cv_prev,
                 'cv_curr': cv_curr,
                 'cv_change': cv_change,
                 'contribution_rate': contribution_rate,
-                'cpa_prev': cpa_prev,
-                'cpa_curr': cpa_curr,
-                'cpa_change': cpa_change,
-                'cost_prev': cost_prev,
-                'cost_curr': cost_curr,
-                'cost_change': cost_change,
                 'cvr_prev': cvr_prev,
                 'cvr_curr': cvr_curr,
-                'cvr_change': cvr_change
+                'cvr_change': cvr_change,
+                'cpa_prev': cpa_prev,
+                'cpa_curr': cpa_curr,
+                'cpa_change': cpa_change
             })
         
         # 寄与率の絶対値で降順ソート
@@ -553,6 +595,7 @@ def get_adgroup_level_analysis(df, selected_media, selected_campaign, previous_m
         month_adgroup_data['cvr'] = month_adgroup_data['cv'] / month_adgroup_data['click'] * 100
         month_adgroup_data['cpc'] = month_adgroup_data['cost'] / month_adgroup_data['click']
         month_adgroup_data['cpa'] = month_adgroup_data['cost'] / month_adgroup_data['cv']
+        month_adgroup_data['cpm'] = month_adgroup_data['cost'] / month_adgroup_data['impression'] * 1000
         
         # 前月と当月のデータを抽出
         prev_data = month_adgroup_data[month_adgroup_data['yearMonth'] == previous_month]
@@ -573,6 +616,36 @@ def get_adgroup_level_analysis(df, selected_media, selected_campaign, previous_m
             prev_row = prev_data[prev_data['adgroup'] == adgroup]
             curr_row = curr_data[curr_data['adgroup'] == adgroup]
             
+            # インプレッション
+            imp_prev = prev_row['impression'].sum() if not prev_row.empty else 0
+            imp_curr = curr_row['impression'].sum() if not curr_row.empty else 0
+            imp_change = ((imp_curr - imp_prev) / imp_prev * 100) if imp_prev > 0 else 0
+            
+            # CPM
+            cpm_prev = prev_row['cpm'].mean() if not prev_row.empty else 0
+            cpm_curr = curr_row['cpm'].mean() if not curr_row.empty else 0
+            cpm_change = ((cpm_curr - cpm_prev) / cpm_prev * 100) if cpm_prev > 0 else 0
+            
+            # クリック
+            click_prev = prev_row['click'].sum() if not prev_row.empty else 0
+            click_curr = curr_row['click'].sum() if not curr_row.empty else 0
+            click_change = ((click_curr - click_prev) / click_prev * 100) if click_prev > 0 else 0
+            
+            # CTR
+            ctr_prev = prev_row['ctr'].mean() if not prev_row.empty else 0
+            ctr_curr = curr_row['ctr'].mean() if not curr_row.empty else 0
+            ctr_change = ((ctr_curr - ctr_prev) / ctr_prev * 100) if ctr_prev > 0 else 0
+            
+            # CPC
+            cpc_prev = prev_row['cpc'].mean() if not prev_row.empty else 0
+            cpc_curr = curr_row['cpc'].mean() if not curr_row.empty else 0
+            cpc_change = ((cpc_curr - cpc_prev) / cpc_prev * 100) if cpc_prev > 0 else 0
+            
+            # コスト
+            cost_prev = prev_row['cost'].sum() if not prev_row.empty else 0
+            cost_curr = curr_row['cost'].sum() if not curr_row.empty else 0
+            cost_change = ((cost_curr - cost_prev) / cost_prev * 100) if cost_prev > 0 else 0
+            
             # 前月または当月のデータがない場合にデフォルト値を設定
             cv_prev = prev_row['cv'].sum() if not prev_row.empty else 0
             cv_curr = curr_row['cv'].sum() if not curr_row.empty else 0
@@ -581,38 +654,46 @@ def get_adgroup_level_analysis(df, selected_media, selected_campaign, previous_m
             # 寄与率の計算
             contribution_rate = (cv_change / total_cv_change * 100) if total_cv_change != 0 else 0
             
-            # CPA計算（0除算対策）
-            cpa_prev = prev_row['cost'].sum() / cv_prev if not prev_row.empty and cv_prev > 0 else 0
-            cpa_curr = curr_row['cost'].sum() / cv_curr if not curr_row.empty and cv_curr > 0 else 0
-            cpa_change = ((cpa_curr - cpa_prev) / cpa_prev * 100) if cpa_prev > 0 and cpa_curr > 0 else 0
-            
-            # コスト
-            cost_prev = prev_row['cost'].sum() if not prev_row.empty else 0
-            cost_curr = curr_row['cost'].sum() if not curr_row.empty else 0
-            cost_change = ((cost_curr - cost_prev) / cost_prev * 100) if cost_prev > 0 else 0
-            
             # CVR計算
-            click_prev = prev_row['click'].sum() if not prev_row.empty else 0
-            click_curr = curr_row['click'].sum() if not curr_row.empty else 0
-            cvr_prev = (cv_prev / click_prev * 100) if click_prev > 0 else 0
-            cvr_curr = (cv_curr / click_curr * 100) if click_curr > 0 else 0
+            cvr_prev = prev_row['cvr'].mean() if not prev_row.empty else 0
+            cvr_curr = curr_row['cvr'].mean() if not curr_row.empty else 0
             cvr_change = ((cvr_curr - cvr_prev) / cvr_prev * 100) if cvr_prev > 0 else 0
+            
+            # CPA計算（0除算対策）
+            cpa_prev = prev_row['cpa'].mean() if not prev_row.empty and cv_prev > 0 else 0
+            cpa_curr = curr_row['cpa'].mean() if not curr_row.empty and cv_curr > 0 else 0
+            cpa_change = ((cpa_curr - cpa_prev) / cpa_prev * 100) if cpa_prev > 0 and cpa_curr > 0 else 0
             
             adgroup_data.append({
                 'adgroup': adgroup,
+                'imp_prev': imp_prev,
+                'imp_curr': imp_curr,
+                'imp_change': imp_change,
+                'cpm_prev': cpm_prev,
+                'cpm_curr': cpm_curr,
+                'cpm_change': cpm_change,
+                'click_prev': click_prev,
+                'click_curr': click_curr,
+                'click_change': click_change,
+                'ctr_prev': ctr_prev,
+                'ctr_curr': ctr_curr,
+                'ctr_change': ctr_change,
+                'cpc_prev': cpc_prev,
+                'cpc_curr': cpc_curr,
+                'cpc_change': cpc_change,
+                'cost_prev': cost_prev,
+                'cost_curr': cost_curr,
+                'cost_change': cost_change,
                 'cv_prev': cv_prev,
                 'cv_curr': cv_curr,
                 'cv_change': cv_change,
                 'contribution_rate': contribution_rate,
-                'cpa_prev': cpa_prev,
-                'cpa_curr': cpa_curr,
-                'cpa_change': cpa_change,
-                'cost_prev': cost_prev,
-                'cost_curr': cost_curr,
-                'cost_change': cost_change,
                 'cvr_prev': cvr_prev,
                 'cvr_curr': cvr_curr,
-                'cvr_change': cvr_change
+                'cvr_change': cvr_change,
+                'cpa_prev': cpa_prev,
+                'cpa_curr': cpa_curr,
+                'cpa_change': cpa_change
             })
         
         # 寄与率の絶対値で降順ソート
@@ -781,13 +862,13 @@ def run_campaign_analysis(campaign_df, selected_media, previous_month, current_m
         # キャンペーンデータを整形
         prompt = f"""あなたは広告データ分析の専門家です。以下の「{selected_media}」媒体のキャンペーンレベルのデータ（{previous_month}と{current_month}の比較）を分析し、洞察と推奨事項を提供してください。
 
-## キャンペーンレベルのCV寄与度ランキング（上位10件）
+## キャンペーンレベルの詳細データ（上位10件）
 """
         
         # キャンペーン寄与度ランキングを追加
-        prompt += "| 順位 | キャンペーン | 前月CV | 当月CV | CV変化 | 寄与率 | CPA変化率 | CVR変化率 |\n|------|------------|--------|--------|--------|--------|-----------|----------|\n"
+        prompt += "| 順位 | キャンペーン | 前月CV | 当月CV | CV変化 | 寄与率 | Imp変化率 | CPM変化率 | Click変化率 | CTR変化率 | CPC変化率 | Cost変化率 | CVR変化率 | CPA変化率 |\n|------|------------|--------|--------|--------|--------|----------|----------|------------|----------|----------|-----------|-----------|----------|\n"
         for i, row in campaign_df.head(10).iterrows():
-            prompt += f"| {i+1} | {row['campaign']} | {row['cv_prev']:.0f} | {row['cv_curr']:.0f} | {row['cv_change']:.0f} | {row['contribution_rate']:.1f}% | {row['cpa_change']:.1f}% | {row['cvr_change']:.1f}% |\n"
+            prompt += f"| {i+1} | {row['campaign']} | {row['cv_prev']:.0f} | {row['cv_curr']:.0f} | {row['cv_change']:.0f} | {row['contribution_rate']:.1f}% | {row['imp_change']:.1f}% | {row['cpm_change']:.1f}% | {row['click_change']:.1f}% | {row['ctr_change']:.1f}% | {row['cpc_change']:.1f}% | {row['cost_change']:.1f}% | {row['cvr_change']:.1f}% | {row['cpa_change']:.1f}% |\n"
         
         # 分析指示を追加
         prompt += f"""
@@ -836,13 +917,13 @@ def run_adgroup_analysis(adgroup_df, selected_media, selected_campaign, previous
         # 広告グループデータを整形
         prompt = f"""あなたは広告データ分析の専門家です。以下の「{selected_media}」媒体の「{selected_campaign}」キャンペーン内の広告グループレベルのデータ（{previous_month}と{current_month}の比較）を分析し、洞察と推奨事項を提供してください。
 
-## 広告グループレベルのCV寄与度ランキング（上位10件）
+## 広告グループレベルの詳細データ（上位10件）
 """
         
         # 広告グループ寄与度ランキングを追加
-        prompt += "| 順位 | 広告グループ | 前月CV | 当月CV | CV変化 | 寄与率 | CPA変化率 | CVR変化率 |\n|------|------------|--------|--------|--------|--------|-----------|----------|\n"
+        prompt += "| 順位 | 広告グループ | 前月CV | 当月CV | CV変化 | 寄与率 | Imp変化率 | CPM変化率 | Click変化率 | CTR変化率 | CPC変化率 | Cost変化率 | CVR変化率 | CPA変化率 |\n|------|------------|--------|--------|--------|--------|----------|----------|------------|----------|----------|-----------|-----------|----------|\n"
         for i, row in adgroup_df.head(10).iterrows():
-            prompt += f"| {i+1} | {row['adgroup']} | {row['cv_prev']:.0f} | {row['cv_curr']:.0f} | {row['cv_change']:.0f} | {row['contribution_rate']:.1f}% | {row['cpa_change']:.1f}% | {row['cvr_change']:.1f}% |\n"
+            prompt += f"| {i+1} | {row['adgroup']} | {row['cv_prev']:.0f} | {row['cv_curr']:.0f} | {row['cv_change']:.0f} | {row['contribution_rate']:.1f}% | {row['imp_change']:.1f}% | {row['cpm_change']:.1f}% | {row['click_change']:.1f}% | {row['ctr_change']:.1f}% | {row['cpc_change']:.1f}% | {row['cost_change']:.1f}% | {row['cvr_change']:.1f}% | {row['cpa_change']:.1f}% |\n"
         
         # 分析指示を追加
         prompt += f"""
@@ -1256,12 +1337,47 @@ if st.session_state.processed_data is not None and st.session_state.analysis_res
                     # データテーブル表示
                     st.markdown(f"**{selected_media}のキャンペーンレベルデータ（上位10件）**")
                     display_df = st.session_state.campaign_data.head(10).copy()
-                    display_df = display_df[['campaign', 'cv_prev', 'cv_curr', 'cv_change', 'contribution_rate', 'cpa_change', 'cvr_change']]
-                    display_df.columns = ['キャンペーン', '前月CV', '当月CV', 'CV変化', '寄与率', 'CPA変化率', 'CVR変化率']
-                    display_df['寄与率'] = display_df['寄与率'].map(lambda x: f"{x:.1f}%")
-                    display_df['CPA変化率'] = display_df['CPA変化率'].map(lambda x: f"{x:.1f}%")
-                    display_df['CVR変化率'] = display_df['CVR変化率'].map(lambda x: f"{x:.1f}%")
-                    st.dataframe(display_df, use_container_width=True)
+                    
+                    # 全ての指標を表示
+                    st.markdown("#### KPI指標一覧")
+                    metrics_df = display_df[['campaign', 'imp_prev', 'imp_curr', 'imp_change', 
+                                         'cpm_prev', 'cpm_curr', 'cpm_change',
+                                         'click_prev', 'click_curr', 'click_change',
+                                         'ctr_prev', 'ctr_curr', 'ctr_change',
+                                         'cpc_prev', 'cpc_curr', 'cpc_change',
+                                         'cost_prev', 'cost_curr', 'cost_change',
+                                         'cv_prev', 'cv_curr', 'cv_change',
+                                         'cvr_prev', 'cvr_curr', 'cvr_change',
+                                         'cpa_prev', 'cpa_curr', 'cpa_change']]
+                    
+                    metrics_df.columns = ['キャンペーン', 
+                                      'インプレッション(前月)', 'インプレッション(当月)', 'インプレッション変化率(%)',
+                                      'CPM(前月)', 'CPM(当月)', 'CPM変化率(%)',
+                                      'クリック(前月)', 'クリック(当月)', 'クリック変化率(%)',
+                                      'CTR(前月)', 'CTR(当月)', 'CTR変化率(%)',
+                                      'CPC(前月)', 'CPC(当月)', 'CPC変化率(%)',
+                                      'コスト(前月)', 'コスト(当月)', 'コスト変化率(%)',
+                                      'CV(前月)', 'CV(当月)', 'CV変化',
+                                      'CVR(前月)', 'CVR(当月)', 'CVR変化率(%)',
+                                      'CPA(前月)', 'CPA(当月)', 'CPA変化率(%)']
+                    
+                    # 数値をフォーマット
+                    for col in metrics_df.columns:
+                        if '変化率' in col or 'CTR' in col or 'CVR' in col:
+                            metrics_df[col] = metrics_df[col].map(lambda x: f"{x:.1f}%" if pd.notnull(x) else "-")
+                        elif 'インプレッション' in col or 'クリック' in col or 'コスト' in col:
+                            metrics_df[col] = metrics_df[col].map(lambda x: f"{x:,.0f}" if pd.notnull(x) else "-")
+                        elif 'CPA' in col or 'CPC' in col or 'CPM' in col:
+                            metrics_df[col] = metrics_df[col].map(lambda x: f"{x:,.1f}" if pd.notnull(x) else "-")
+                    
+                    st.dataframe(metrics_df, use_container_width=True)
+                    
+                    # CV寄与度の簡易表示
+                    st.markdown("#### CV寄与度")
+                    cv_df = display_df[['campaign', 'cv_prev', 'cv_curr', 'cv_change', 'contribution_rate']]
+                    cv_df.columns = ['キャンペーン', '前月CV', '当月CV', 'CV変化', '寄与率']
+                    cv_df['寄与率'] = cv_df['寄与率'].map(lambda x: f"{x:.1f}%")
+                    st.dataframe(cv_df, use_container_width=True)
                     
                     # LLM分析結果を表示
                     if 'campaign_analysis' in st.session_state and st.session_state.campaign_analysis:
@@ -1305,12 +1421,47 @@ if st.session_state.processed_data is not None and st.session_state.analysis_res
                         # データテーブル表示
                         st.markdown(f"**{selected_campaign}の広告グループレベルデータ（上位10件）**")
                         display_df = st.session_state.adgroup_data.head(10).copy()
-                        display_df = display_df[['adgroup', 'cv_prev', 'cv_curr', 'cv_change', 'contribution_rate', 'cpa_change', 'cvr_change']]
-                        display_df.columns = ['広告グループ', '前月CV', '当月CV', 'CV変化', '寄与率', 'CPA変化率', 'CVR変化率']
-                        display_df['寄与率'] = display_df['寄与率'].map(lambda x: f"{x:.1f}%")
-                        display_df['CPA変化率'] = display_df['CPA変化率'].map(lambda x: f"{x:.1f}%")
-                        display_df['CVR変化率'] = display_df['CVR変化率'].map(lambda x: f"{x:.1f}%")
-                        st.dataframe(display_df, use_container_width=True)
+                        
+                        # 全ての指標を表示
+                        st.markdown("#### KPI指標一覧")
+                        metrics_df = display_df[['adgroup', 'imp_prev', 'imp_curr', 'imp_change', 
+                                             'cpm_prev', 'cpm_curr', 'cpm_change',
+                                             'click_prev', 'click_curr', 'click_change',
+                                             'ctr_prev', 'ctr_curr', 'ctr_change',
+                                             'cpc_prev', 'cpc_curr', 'cpc_change',
+                                             'cost_prev', 'cost_curr', 'cost_change',
+                                             'cv_prev', 'cv_curr', 'cv_change',
+                                             'cvr_prev', 'cvr_curr', 'cvr_change',
+                                             'cpa_prev', 'cpa_curr', 'cpa_change']]
+                        
+                        metrics_df.columns = ['広告グループ', 
+                                          'インプレッション(前月)', 'インプレッション(当月)', 'インプレッション変化率(%)',
+                                          'CPM(前月)', 'CPM(当月)', 'CPM変化率(%)',
+                                          'クリック(前月)', 'クリック(当月)', 'クリック変化率(%)',
+                                          'CTR(前月)', 'CTR(当月)', 'CTR変化率(%)',
+                                          'CPC(前月)', 'CPC(当月)', 'CPC変化率(%)',
+                                          'コスト(前月)', 'コスト(当月)', 'コスト変化率(%)',
+                                          'CV(前月)', 'CV(当月)', 'CV変化',
+                                          'CVR(前月)', 'CVR(当月)', 'CVR変化率(%)',
+                                          'CPA(前月)', 'CPA(当月)', 'CPA変化率(%)']
+                        
+                        # 数値をフォーマット
+                        for col in metrics_df.columns:
+                            if '変化率' in col or 'CTR' in col or 'CVR' in col:
+                                metrics_df[col] = metrics_df[col].map(lambda x: f"{x:.1f}%" if pd.notnull(x) else "-")
+                            elif 'インプレッション' in col or 'クリック' in col or 'コスト' in col:
+                                metrics_df[col] = metrics_df[col].map(lambda x: f"{x:,.0f}" if pd.notnull(x) else "-")
+                            elif 'CPA' in col or 'CPC' in col or 'CPM' in col:
+                                metrics_df[col] = metrics_df[col].map(lambda x: f"{x:,.1f}" if pd.notnull(x) else "-")
+                        
+                        st.dataframe(metrics_df, use_container_width=True)
+                        
+                        # CV寄与度の簡易表示
+                        st.markdown("#### CV寄与度")
+                        cv_df = display_df[['adgroup', 'cv_prev', 'cv_curr', 'cv_change', 'contribution_rate']]
+                        cv_df.columns = ['広告グループ', '前月CV', '当月CV', 'CV変化', '寄与率']
+                        cv_df['寄与率'] = cv_df['寄与率'].map(lambda x: f"{x:.1f}%")
+                        st.dataframe(cv_df, use_container_width=True)
                         
                         # LLM分析結果を表示
                         if 'adgroup_analysis' in st.session_state and st.session_state.adgroup_analysis:
@@ -1360,12 +1511,47 @@ if st.session_state.processed_data is not None and st.session_state.analysis_res
                         
                         # キャンペーンデータの表示
                         campaign_df = media_analysis['campaign_data'].head(10).copy()
-                        campaign_df = campaign_df[['campaign', 'cv_prev', 'cv_curr', 'cv_change', 'contribution_rate', 'cpa_change', 'cvr_change']]
-                        campaign_df.columns = ['キャンペーン', '前月CV', '当月CV', 'CV変化', '寄与率', 'CPA変化率', 'CVR変化率']
-                        campaign_df['寄与率'] = campaign_df['寄与率'].map(lambda x: f"{x:.1f}%")
-                        campaign_df['CPA変化率'] = campaign_df['CPA変化率'].map(lambda x: f"{x:.1f}%")
-                        campaign_df['CVR変化率'] = campaign_df['CVR変化率'].map(lambda x: f"{x:.1f}%")
-                        st.dataframe(campaign_df, use_container_width=True)
+                        
+                        # 全ての指標を表示
+                        st.markdown("##### KPI指標一覧")
+                        metrics_df = campaign_df[['campaign', 'imp_prev', 'imp_curr', 'imp_change', 
+                                             'cpm_prev', 'cpm_curr', 'cpm_change',
+                                             'click_prev', 'click_curr', 'click_change',
+                                             'ctr_prev', 'ctr_curr', 'ctr_change',
+                                             'cpc_prev', 'cpc_curr', 'cpc_change',
+                                             'cost_prev', 'cost_curr', 'cost_change',
+                                             'cv_prev', 'cv_curr', 'cv_change',
+                                             'cvr_prev', 'cvr_curr', 'cvr_change',
+                                             'cpa_prev', 'cpa_curr', 'cpa_change']]
+                        
+                        metrics_df.columns = ['キャンペーン', 
+                                          'インプレッション(前月)', 'インプレッション(当月)', 'インプレッション変化率(%)',
+                                          'CPM(前月)', 'CPM(当月)', 'CPM変化率(%)',
+                                          'クリック(前月)', 'クリック(当月)', 'クリック変化率(%)',
+                                          'CTR(前月)', 'CTR(当月)', 'CTR変化率(%)',
+                                          'CPC(前月)', 'CPC(当月)', 'CPC変化率(%)',
+                                          'コスト(前月)', 'コスト(当月)', 'コスト変化率(%)',
+                                          'CV(前月)', 'CV(当月)', 'CV変化',
+                                          'CVR(前月)', 'CVR(当月)', 'CVR変化率(%)',
+                                          'CPA(前月)', 'CPA(当月)', 'CPA変化率(%)']
+                        
+                        # 数値をフォーマット
+                        for col in metrics_df.columns:
+                            if '変化率' in col or 'CTR' in col or 'CVR' in col:
+                                metrics_df[col] = metrics_df[col].map(lambda x: f"{x:.1f}%" if pd.notnull(x) else "-")
+                            elif 'インプレッション' in col or 'クリック' in col or 'コスト' in col:
+                                metrics_df[col] = metrics_df[col].map(lambda x: f"{x:,.0f}" if pd.notnull(x) else "-")
+                            elif 'CPA' in col or 'CPC' in col or 'CPM' in col:
+                                metrics_df[col] = metrics_df[col].map(lambda x: f"{x:,.1f}" if pd.notnull(x) else "-")
+                        
+                        st.dataframe(metrics_df, use_container_width=True)
+                        
+                        # CV寄与度の簡易表示
+                        st.markdown("##### CV寄与度")
+                        cv_df = campaign_df[['campaign', 'cv_prev', 'cv_curr', 'cv_change', 'contribution_rate']]
+                        cv_df.columns = ['キャンペーン', '前月CV', '当月CV', 'CV変化', '寄与率']
+                        cv_df['寄与率'] = cv_df['寄与率'].map(lambda x: f"{x:.1f}%")
+                        st.dataframe(cv_df, use_container_width=True)
                         
                         # キャンペーン分析結果
                         if media_analysis['campaign_analysis']:
@@ -1376,19 +1562,65 @@ if st.session_state.processed_data is not None and st.session_state.analysis_res
                         st.markdown("#### 広告グループレベル分析")
                         
                         for campaign, adgroup_info in media_analysis['adgroup_analyses'].items():
-                            with st.expander(f"キャンペーン: {campaign}"):
+                            # エキスパンダーを使わず、マークダウンとコンテナを使用
+                            st.markdown(f"##### キャンペーン: {campaign}")
+                            
+                            # コンテナを使ってグループ化
+                            container = st.container()
+                            with container:
+                                # 視覚的な区切りを追加
+                                st.markdown("<hr style='margin: 0.5em 0; opacity: 0.3'>", unsafe_allow_html=True)
+                                
                                 # 広告グループデータの表示
                                 adgroup_df = adgroup_info['data'].head(10).copy()
-                                adgroup_df = adgroup_df[['adgroup', 'cv_prev', 'cv_curr', 'cv_change', 'contribution_rate', 'cpa_change', 'cvr_change']]
-                                adgroup_df.columns = ['広告グループ', '前月CV', '当月CV', 'CV変化', '寄与率', 'CPA変化率', 'CVR変化率']
-                                adgroup_df['寄与率'] = adgroup_df['寄与率'].map(lambda x: f"{x:.1f}%")
-                                adgroup_df['CPA変化率'] = adgroup_df['CPA変化率'].map(lambda x: f"{x:.1f}%")
-                                adgroup_df['CVR変化率'] = adgroup_df['CVR変化率'].map(lambda x: f"{x:.1f}%")
-                                st.dataframe(adgroup_df, use_container_width=True)
+                                
+                                # 全ての指標を表示
+                                st.markdown("###### KPI指標一覧")
+                                metrics_df = adgroup_df[['adgroup', 'imp_prev', 'imp_curr', 'imp_change', 
+                                                 'cpm_prev', 'cpm_curr', 'cpm_change',
+                                                 'click_prev', 'click_curr', 'click_change',
+                                                 'ctr_prev', 'ctr_curr', 'ctr_change',
+                                                 'cpc_prev', 'cpc_curr', 'cpc_change',
+                                                 'cost_prev', 'cost_curr', 'cost_change',
+                                                 'cv_prev', 'cv_curr', 'cv_change',
+                                                 'cvr_prev', 'cvr_curr', 'cvr_change',
+                                                 'cpa_prev', 'cpa_curr', 'cpa_change']]
+                                
+                                metrics_df.columns = ['広告グループ', 
+                                                  'インプレッション(前月)', 'インプレッション(当月)', 'インプレッション変化率(%)',
+                                                  'CPM(前月)', 'CPM(当月)', 'CPM変化率(%)',
+                                                  'クリック(前月)', 'クリック(当月)', 'クリック変化率(%)',
+                                                  'CTR(前月)', 'CTR(当月)', 'CTR変化率(%)',
+                                                  'CPC(前月)', 'CPC(当月)', 'CPC変化率(%)',
+                                                  'コスト(前月)', 'コスト(当月)', 'コスト変化率(%)',
+                                                  'CV(前月)', 'CV(当月)', 'CV変化',
+                                                  'CVR(前月)', 'CVR(当月)', 'CVR変化率(%)',
+                                                  'CPA(前月)', 'CPA(当月)', 'CPA変化率(%)']
+                                
+                                # 数値をフォーマット
+                                for col in metrics_df.columns:
+                                    if '変化率' in col or 'CTR' in col or 'CVR' in col:
+                                        metrics_df[col] = metrics_df[col].map(lambda x: f"{x:.1f}%" if pd.notnull(x) else "-")
+                                    elif 'インプレッション' in col or 'クリック' in col or 'コスト' in col:
+                                        metrics_df[col] = metrics_df[col].map(lambda x: f"{x:,.0f}" if pd.notnull(x) else "-")
+                                    elif 'CPA' in col or 'CPC' in col or 'CPM' in col:
+                                        metrics_df[col] = metrics_df[col].map(lambda x: f"{x:,.1f}" if pd.notnull(x) else "-")
+                                
+                                st.dataframe(metrics_df, use_container_width=True)
+                                
+                                # CV寄与度の簡易表示
+                                st.markdown("###### CV寄与度")
+                                cv_df = adgroup_df[['adgroup', 'cv_prev', 'cv_curr', 'cv_change', 'contribution_rate']]
+                                cv_df.columns = ['広告グループ', '前月CV', '当月CV', 'CV変化', '寄与率']
+                                cv_df['寄与率'] = cv_df['寄与率'].map(lambda x: f"{x:.1f}%")
+                                st.dataframe(cv_df, use_container_width=True)
                                 
                                 # 広告グループ分析結果
                                 if adgroup_info['analysis']:
                                     st.markdown(adgroup_info['analysis'])
+                                
+                                # 下部に余白を追加
+                                st.markdown("<br>", unsafe_allow_html=True)
             
             # 総合分析と推奨事項
             if len(important_media) > 0:
