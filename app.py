@@ -45,6 +45,11 @@ if 'auto_analysis_results' not in st.session_state:
 if 'important_media' not in st.session_state:
     st.session_state.important_media = None
 
+if "HTTP_PROXY" in os.environ:
+    del os.environ["HTTP_PROXY"]
+if "HTTPS_PROXY" in os.environ:
+    del os.environ["HTTPS_PROXY"]
+
 # タイトルとイントロダクション
 st.title("広告パフォーマンス分析ダッシュボード")
 st.markdown("""
