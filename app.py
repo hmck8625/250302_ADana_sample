@@ -79,7 +79,7 @@ if "HTTPS_PROXY" in os.environ:
 
 
 # 使用するモデルの選択
-model_options = ["gpt-4-turbo", "gpt-4", "gpt-3.5-turbo"]
+model_options = ["gpt-3.5-turbo", "gpt-4o-mini"]
 selected_model = st.sidebar.selectbox("使用するモデル", model_options, index=0)
 
 # 月の選択
@@ -773,8 +773,11 @@ def run_campaign_analysis(campaign_df, selected_media, previous_month, current_m
             return "LLM分析を実行するにはOpenAIのAPIキーが必要です。サイドバーでAPIキーを入力してください。"
         
         # OpenAI APIクライアントの設定
-        client = OpenAI(api_key=api_key)
-        
+        client = OpenAI(
+          api_key=api_key,
+          http_client=http_client
+        )
+
         # キャンペーンデータを整形
         prompt = f"""あなたは広告データ分析の専門家です。以下の「{selected_media}」媒体のキャンペーンレベルのデータ（{previous_month}と{current_month}の比較）を分析し、洞察と推奨事項を提供してください。
 
@@ -825,8 +828,11 @@ def run_adgroup_analysis(adgroup_df, selected_media, selected_campaign, previous
             return "LLM分析を実行するにはOpenAIのAPIキーが必要です。サイドバーでAPIキーを入力してください。"
         
         # OpenAI APIクライアントの設定
-        client = OpenAI(api_key=api_key)
-        
+        client = OpenAI(
+          api_key=api_key,
+          http_client=http_client
+        )
+
         # 広告グループデータを整形
         prompt = f"""あなたは広告データ分析の専門家です。以下の「{selected_media}」媒体の「{selected_campaign}」キャンペーン内の広告グループレベルのデータ（{previous_month}と{current_month}の比較）を分析し、洞察と推奨事項を提供してください。
 
@@ -1393,8 +1399,10 @@ if st.session_state.processed_data is not None and st.session_state.analysis_res
                     with st.spinner("総合分析を生成中..."):
                         try:
                             # OpenAI APIクライアントの設定
-                            client = OpenAI(api_key=api_key)
-                            
+                            client = OpenAI(
+                              api_key=api_key,
+                              http_client=http_client
+                            )                            
                             # 総合分析のプロンプト作成
                             prompt = f"""あなたは広告パフォーマンス分析の専門家です。以下のデータ分析結果を総合的に評価し、全体的な最適化提案をしてください。
 
