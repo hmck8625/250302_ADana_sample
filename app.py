@@ -45,11 +45,6 @@ if 'auto_analysis_results' not in st.session_state:
 if 'important_media' not in st.session_state:
     st.session_state.important_media = None
 
-if "HTTP_PROXY" in os.environ:
-    del os.environ["HTTP_PROXY"]
-if "HTTPS_PROXY" in os.environ:
-    del os.environ["HTTPS_PROXY"]
-
 # タイトルとイントロダクション
 st.title("広告パフォーマンス分析ダッシュボード")
 st.markdown("""
@@ -65,6 +60,12 @@ st.sidebar.header("設定")
 
 # APIキー入力（省略可能）
 api_key = st.sidebar.text_input("OpenAI API Key (オプション)", type="password")
+
+if "HTTP_PROXY" in os.environ:
+    del os.environ["HTTP_PROXY"]
+if "HTTPS_PROXY" in os.environ:
+    del os.environ["HTTPS_PROXY"]
+
 
 # 使用するモデルの選択
 model_options = ["gpt-4-turbo", "gpt-4", "gpt-3.5-turbo"]
